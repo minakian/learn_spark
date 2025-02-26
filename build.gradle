@@ -1,0 +1,114 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.google.protobuf' version '0.9.4'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.protobuf:protobuf-java:3.25.2'
+    implementation 'com.google.protobuf:protobuf-java-util:3.25.2'
+    implementation 'com.sparkjava:spark-core:2.9.4'
+    
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.25.2'
+    }
+}
+
+ext {
+    protoSrcDir = 'src/main/proto'
+    mainClasses = [
+        'client': 'com.example.client.ComplexClient',
+        'server': 'com.example.server.ComplexServer'
+    ]
+}
+
+// Set default main class
+application {
+    mainClass = mainClasses.server
+}
+
+// Create proto structure
+task createProtoStructure {
+    doLast {
+        def baseDir = file(protoSrcDir)
+        def baseDirAFRL = file("${protoSrcDir}/afrl")
+        def ntfDir = file("${baseDirAFRL}/ntf")
+        
+        // Create base directories
+        mkdir(baseDir)
+        mkdir(baseDirAFRL)
+        mkdir(ntfDir)
+        
+        // Create common directory structure
+        mkdir("${ntfDir}/common")
+        mkdir("${ntfDir}/common/v1")
+        
+        // Create broker_to_mms directory structure
+        mkdir("${ntfDir}/broker_to_mms")
+        mkdir("${ntfDir}/broker_to_mms/v1")
+        
+        // Create mms_to_broker directory structure
+        mkdir("${ntfDir}/mms_to_broker")
+        mkdir("${ntfDir}/mms_to_broker/v1")
+    }
+}
+
+// Copy proto files to their appropriate locations
+task copyProtoFiles(dependsOn: createProtoStructure) {
+    doLast {
+        // Copy the proto files to their respective directories
+        // This assumes the proto files are available in a directory structure
+        // that matches their package declarations
+        
+        // If not, you'd need to manually specify the source and destination
+        // for each file
+        
+        println "Proto files need to be placed in the correct structure:"
+        println "- afrl/ntf/common/v1/*.proto"
+        println "- afrl/ntf/broker_to_mms/v1/*.proto"
+        println "- afrl/ntf/mms_to_broker/v1/*.proto"
+    }
+}
+
+// Task to run a specific main class
+tasks.register('runClient') {
+    dependsOn classes
+    doLast {
+        javaexec {
+            classpath = sourceSets.main.runtimeClasspath
+            mainClass = mainClasses.client
+            standardInput = System.in
+        }
+    }
+}
+
+tasks.register('runServer') {
+    dependsOn classes
+    doLast {
+        javaexec {
+            classpath = sourceSets.main.runtimeClasspath
+            mainClass = mainClasses.server
+            standardInput = System.in
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
