@@ -1,0 +1,94 @@
+{
+    "messageType": "CDS_Capabilities",
+    "payload": {
+        "capabilities": {
+            "localDomain": "D1",
+            "localClassification": "C1",
+            "reachableDomains": [
+                {
+                    "domain": "D2",
+                    "classification": "C2",
+                    "to": [
+                        {
+                            "messageType": "C2.1",
+                            "latency": 200
+                        },
+                        {
+                            "capability": "C2.2",
+                            "latency": 200
+                        }
+                    ],
+                    "from": [
+                        {
+                            "messageType": "C2.3",
+                            "latency": 200
+                        },
+                        {
+                            "capability": "C2.4",
+                            "latency": 200
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+
+CapabilitiesMessage{
+    messageType='CDS_Capabilities', 
+    payload=Payload{
+        capabilities=Capabilities{
+            localDomain='D1', 
+            localClassification='C1', 
+            reachableDomains=[
+                Domain{
+                    domain='D2', 
+                    classification='C2', 
+                    to=[
+                        CapabilityDetail{
+                            messageType='C2.1', 
+                            latency=200
+                        }, 
+                        CapabilityDetail{
+                            messageType='C2.2', 
+                            latency=200
+                        }
+                    ], 
+                    from=[
+                        CapabilityDetail{
+                            messageType='C2.3', 
+                            latency=200
+                        }, 
+                        CapabilityDetail{
+                            messageType='C2.4', 
+                            latency=200
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+
+broker_msg: BrokerServiceMessage
+    broker_id: int32 (Generate UID)
+    broker_name: string (P2-CBS-D1)
+    local_domain: SecurityDomain
+        classificationLevel: ClassificationLevel (enum)
+        sensitivityLevel: SensitivityLevel (enum)
+    reachable_domains: repeated DomainService
+        securityDomain: SecurityDomain
+            classificationLevel: ClassificationLevel (enum)
+            sensitivityLevel: SensitivityLevel (enum)
+        to: DirectionalServices
+            message_services: repeated MessageService
+                message_format: MessageFormat
+                    data_type: DataType (enum)
+                    oneof data_subtype:
+                        sim_id: SimulationMessageId (enum)
+                        link16_id: Link16MessageId (enum)
+                        uci_id: UciMessageId (enum)
+                average_broker_latency: google.protobuf.Duration
+        from: DirectionalServices
+            message_services: repeated MessageService
+                (same structure as above)

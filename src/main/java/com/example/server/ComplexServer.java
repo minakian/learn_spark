@@ -201,7 +201,7 @@ public class ComplexServer {
                 .setSubscriberName("Example Subscriber")
                 .setImsIdentifier("IMS-2023-001")
                 .setImsTopic("ntf.data.link16")
-                .setPredicate("message_type = 'J2.0' AND priority > 3")
+                .setPredicate("DATA")
                 .build();
     }
 
@@ -298,6 +298,7 @@ public class ComplexServer {
                 System.out.println("  Broker Name: " + brokerMsg.getBrokerName());
                 System.out.println("  Local Domain: " + formatSecurityDomain(brokerMsg.getLocalDomain()));
                 System.out.println("  Reachable Domains Count: " + brokerMsg.getReachableDomainsCount());
+                System.out.println(brokerMsg);
             } else if (message.hasPathRequest()) {
                 // Handle PathMetricInfoRequest
                 PathMetricInfoRequest pathRequest = message.getPathRequest();

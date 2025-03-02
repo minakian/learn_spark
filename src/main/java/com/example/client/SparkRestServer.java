@@ -2,6 +2,11 @@ package com.example.client;
 
 import static spark.Spark.*;
 
+import com.example.client.model.CapabilitiesMessage;
+import com.example.client.model.SubscriptionModel;
+import com.example.client.store.DataStore;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class SparkRestServer {
     private final int port;
 
@@ -19,35 +24,31 @@ public class SparkRestServer {
             return "Hello, Spark Java!";
         });
 
-        // Define a POST endpoint at /data to receive JSON
-        post("/data", (request, response) -> {
-            String contentType = request.contentType();
-            String body = request.body();
+         // Define a POST endpoint at /data to receive JSON
+        post("/v1/api/capabilities", (req, res) -> {
+            String jsonBody = req.body();
+            ObjectMapper mapper = new ObjectMapper();
+            CapabilitiesMessage message = mapper.readValue(jsonBody, CapabilitiesMessage.class);
+
+            System.out.println("Received CapabilitiesMessage: " + message);
             
-            if (contentType != null && contentType.contains("application/xml")) {
-                // Process XML payload
-                // For demonstration, we'll simply echo it back in an XML response.
-                response.type("application/xml");
-                return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                       "<response>" +
-                       "  <status>Received</status>" +
-                       "  <data>" + body + "</data>" +
-                       "</response>";
-            } else if (contentType != null && contentType.contains("application/json")) {
-                // Process JSON payload
-                response.type("application/json");
-                return "{\"status\":\"Received\",\"data\":" + body + "}";
-            } else {
-                // Unsupported Content-Type
-                response.status(415); // Unsupported Media Type
-                return "Unsupported Content-Type. Please send JSON or XML.";
-            }
+            // Store the parsed message in the shared DataStore
+            DataStore.storeCapabilities(message);
+            DataStore.setUpdated(true);
+            
+            res.status(200);
+            return "Message stored successfully!";
         });
 
-        // Additional endpoint example
-        get("/goodbye", (request, response) -> {
-            response.type("text/plain");
-            return "Goodbye from Spark Java!";
+        post("/api/v1/subscribe", (req, res) -> {
+            String jsonBody = req.body();
+            ObjectMapper mapper = new ObjectMapper();
+
+            SubscriptionModel msg = mapper.readValue(jsonBody, SubscriptionModel.class);
+            
+            System.out.println("New Message: \n" + jsonBody);
+            res.status(200);
+            return "New subscription";
         });
 
         System.out.println("Spark REST server started on port " + port);

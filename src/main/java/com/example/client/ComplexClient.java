@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 // import java.time.Duration;
 import java.net.URI;
@@ -12,6 +14,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 import com.google.protobuf.Duration;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import afrl.ntf.broker_to_mms.v1.BrokerServiceMessageOuterClass.BrokerServiceMessage;
 import afrl.ntf.broker_to_mms.v1.BrokerServiceMessageOuterClass.DomainService;
@@ -27,16 +32,21 @@ import afrl.ntf.common.v1.PathAttributeOuterClass.PathAttribute;
 import afrl.ntf.common.v1.PathAttributeTypeOuterClass.PathAttributeType;
 import afrl.ntf.common.v1.SecurityDomainOuterClass.SecurityDomain;
 import afrl.ntf.common.v1.SensitivityLevelOuterClass.SensitivityLevel;
+import afrl.ntf.common.v1.SimulationMessageIdOuterClass.SimulationMessageId;
 import afrl.ntf.mms_to_broker.v1.MMSToBrokerMessageOuterClass.MMSToBrokerMessage;
 import afrl.ntf.mms_to_broker.v1.PathMetricInfoReplyOuterClass.PathMetricInfoReply;
 import afrl.ntf.common.v1.PathMetricInfoOuterClass.PathMetricInfo;
 import afrl.ntf.mms_to_broker.v1.SubscriberInformationMessageOuterClass.SubscriberInformationMessage;
 
-import com.example.client.SparkRestServer;
+import com.example.client.model.*;
+import com.example.client.store.DataStore;
+import com.example.client.store.ConfigStore;
+
 
 public class ComplexClient {
     private static final String SERVER_HOST = "localhost";
     private static final int SERVER_PORT = 8080;
+    private static final int IMSA_PORT = 6000;
     private Socket socket;
     private DataOutputStream out;
     private DataInputStream in;
@@ -53,6 +63,9 @@ public class ComplexClient {
             SparkRestServer restServer = new SparkRestServer(4567);
             restServer.startServer();
         }).start();
+
+        AppSettings settings = ConfigStore.getInstance().getSettings();
+        System.out.println(settings);
 
         try {
             // Connect to the server
@@ -73,7 +86,9 @@ public class ComplexClient {
     }
 
     private void connect() throws IOException {
-        socket = new Socket(SERVER_HOST, SERVER_PORT);
+        String[] ta2Endpoint = ConfigStore.getInstance().getSettings().getTa2Endpoint().split(":");
+        
+        socket = new Socket(ta2Endpoint[0], Integer.parseInt(ta2Endpoint[1]));
         out = new DataOutputStream(socket.getOutputStream());
         in = new DataInputStream(socket.getInputStream());
         connected = true;
@@ -111,11 +126,16 @@ public class ComplexClient {
                         byte[] messageBytes = new byte[messageLength];
                         in.readFully(messageBytes);
                         
+                        // TODO: Add try for different message types
                         // Parse message
-                        MMSToBrokerMessage message = MMSToBrokerMessage.parseFrom(messageBytes);
-                        
-                        // Handle the message
-                        handleServerMessage(message);
+                        try {
+                            MMSToBrokerMessage message = MMSToBrokerMessage.parseFrom(messageBytes);
+                            
+                            // Handle the message
+                            handleServerMessage(message);
+                        } catch (InvalidProtocolBufferException e) {
+                            System.out.println("Not a valid protobuf message");
+                        }
                     }
                     
                     // Sleep to prevent high CPU usage
@@ -145,6 +165,19 @@ public class ComplexClient {
             System.out.println("  IMS Identifier: " + subMsg.getImsIdentifier());
             System.out.println("  IMS Topic: " + subMsg.getImsTopic());
             System.out.println("  Predicate: " + subMsg.getPredicate());
+
+            // TODO: Send topic to IMSL
+            try {
+                SubscriptionModel sub = new SubscriptionModel(subMsg.getImsTopic(), subMsg.getPredicate());
+                ObjectMapper mapper = new ObjectMapper();
+                String jsonString = mapper.writeValueAsString(sub);
+                System.out.println(jsonString);
+                sendPostRequest("http://127.0.0.1:4567/api/v1/subscribe", jsonString); // TODO: Remove hard code
+            } catch (Exception e) {
+                System.out.println("Invalid proto to json conversion.");
+            }
+
+
         } else if (message.hasPathReply()) {
             PathMetricInfoReply reply = message.getPathReply();
             PathMetricInfo info = reply.getInfo();
@@ -158,6 +191,8 @@ public class ComplexClient {
             for (PathAttribute attr : info.getPathMetricsList()) {
                 System.out.println("    Type: " + attr.getAttributeType() + ", Value: " + attr.getValue());
             }
+            // Do nothing with this message we dont need it
+
         } else {
             System.out.println("Unknown message type");
         }
@@ -174,6 +209,14 @@ public class ComplexClient {
         
         while (running && connected) {
             try {
+                if(DataStore.getLatestCapabilitiesMessage() == null){
+                    // TODO: Send request to CDS Adapter
+                }
+                if (DataStore.getUpdated()){
+                    // System.out.println(DataStore.getLatestCapabilitiesMessage());
+                    sendBrokerServiceMessage();
+                    DataStore.setUpdated(false);
+                }
                 if (scanner.hasNextLine()) {
                     String input = scanner.nextLine().trim();
                     
@@ -232,7 +275,10 @@ public class ComplexClient {
 
     private void sendBrokerServiceMessage() throws IOException {
         // Create a BrokerServiceMessage
-        BrokerServiceMessage brokerMsg = createSampleBrokerServiceMessage();
+        BrokerServiceMessage brokerMsg = createBrokerServiceMessage();
+        if (brokerMsg == null) {
+            return;
+        }
         
         // Wrap in BrokerToMMSMessage
         BrokerToMMSMessage message = BrokerToMMSMessage.newBuilder()
@@ -301,47 +347,110 @@ public class ComplexClient {
         }
     }
 
-    private BrokerServiceMessage createSampleBrokerServiceMessage() {
+    private ClassificationLevel parseClassificationLevel(String classificationLevel) {
+        switch (classificationLevel) {
+            case "TS//SCI":
+                return ClassificationLevel.CLASSIFICATION_LEVEL_TS_SCI;
+            case "TS":
+                return ClassificationLevel.CLASSIFICATION_LEVEL_TOP_SECRET;
+            case "SECRET":
+                return ClassificationLevel.CLASSIFICATION_LEVEL_SECRET;
+            case "CS":
+                return ClassificationLevel.CLASSIFICATION_LEVEL_COALITION_SECRET;
+            case "CUC":
+                return ClassificationLevel.CLASSIFICATION_LEVEL_COMMERCIAL_UNCLASSIFIED;
+            default:
+                return ClassificationLevel.CLASSIFICATION_LEVEL_UNDEFINED;
+        }
+    }
+
+    private List<MessageService> parseMessageServices (List<CapabilityDetail> services) {
+        List<MessageService> messageServices = new ArrayList<>();
+        for(CapabilityDetail capabilityDetail : services){
+            String messageType = capabilityDetail.getMessageType();
+            int latency = capabilityDetail.getLatency();
+            
+            // TODO: Parse message types into corresponding fields
+
+            messageServices.add(
+                MessageService.newBuilder()
+                    .setMessageFormat(
+                        MessageFormat.newBuilder()
+                            .setDataType(DataType.DATA_TYPE_SIMULATION) // TODO: Should be parsed from capabilityDetail
+                            .setSimId(SimulationMessageId.UNDEFINED) // TODO: This needs to be parsed and determined from capabilities
+                            .build()
+                    )
+                    .setAverageBrokerLatency(
+                        Duration.newBuilder()
+                            .setSeconds(latency/1000)
+                            .setNanos((latency%1000)*1000000) // Convert to nanoseconds (1ms = 1,000,000ns) Should move any ms over 1000 to seconds
+                            .build()
+                    )
+                    .build()
+            );
+        }
+        return messageServices;
+    }
+
+    private BrokerServiceMessage createBrokerServiceMessage() {
+        CapabilitiesMessage messages = DataStore.getLatestCapabilitiesMessage();
+        if (messages == null) {
+            return null;
+        }
+        String localDonain = messages.getPayload().getCapabilities().getLocalDomain();
+        String localClass = messages.getPayload().getCapabilities().getLocalClassification();
+        ClassificationLevel classificationLevel = parseClassificationLevel(localClass);
+        
+        /*
+         * repeated DomainService reachable_domains = 2;
+         *      SecurityDomain
+         *      to
+         *      from
+         */
+        // Gather Domain Services
+        List <DomainService> domainServices = new ArrayList<>();
+        for(Domain domain : messages.getPayload().getCapabilities().getReachableDomains()){
+            String domainDesignator = domain.getDomain();
+            String domainClass = domain.getClassification();
+            
+            // Gather TO
+            List<MessageService> messageServices = parseMessageServices(domain.getTo());
+            // Build TO
+            DirectionalServices dsTo = DirectionalServices.newBuilder().addAllMessageServices(messageServices).build();
+
+            // Clear the list
+            messageServices.clear();
+            // Gather FROM
+            messageServices = parseMessageServices(domain.getFrom());
+            //Build FROM
+            DirectionalServices dsFrom = DirectionalServices.newBuilder().addAllMessageServices(messageServices).build();
+
+            // Add to domain services
+            domainServices.add(
+                DomainService.newBuilder()
+                    .setSecurityDomain(SecurityDomain.newBuilder()
+                        .setClassificationLevel(parseClassificationLevel(domainClass))
+                        .setSensitivityLevel(SensitivityLevel.SENSITIVITY_LEVEL_UNDEFINED)
+                        .build())
+                    .setTo(dsTo)
+                    .setFrom(dsFrom)
+                    .build()
+            );
+
+        }
+
         // Create a SecurityDomain
         SecurityDomain securityDomain = SecurityDomain.newBuilder()
-                .setClassificationLevel(ClassificationLevel.CLASSIFICATION_LEVEL_SECRET)
-                .setSensitivityLevel(SensitivityLevel.SENSITIVITY_LEVEL_REL_TO)
+                .setClassificationLevel(classificationLevel)
+                .setSensitivityLevel(SensitivityLevel.SENSITIVITY_LEVEL_UNDEFINED)
                 .build();
-        
-        // Create a MessageFormat
-        MessageFormat messageFormat = MessageFormat.newBuilder()
-                .setDataType(DataType.DATA_TYPE_LINK16)
-                .setLink16Id(Link16MessageId.J2_DOT0)
-                .build();
-        
-        // Create a MessageService with protobuf Duration
-        Duration.Builder durationBuilder = Duration.newBuilder();
-        durationBuilder.setSeconds(0);
-        durationBuilder.setNanos(500000000); // 500ms
-        
-        MessageService messageService = MessageService.newBuilder()
-                .setMessageFormat(messageFormat)
-                .setAverageBrokerLatency(durationBuilder.build())
-                .build();
-        
-        // Create DirectionalServices
-        DirectionalServices directionalServices = DirectionalServices.newBuilder()
-                .addMessageServices(messageService)
-                .build();
-        
-        // Create DomainService
-        DomainService domainService = DomainService.newBuilder()
-                .setSecurityDomain(securityDomain)
-                .setTo(directionalServices)
-                .setFrom(directionalServices)
-                .build();
-        
-        // Create BrokerServiceMessage
+
+        // Build DomainServices
         return BrokerServiceMessage.newBuilder()
-                .setBrokerId(42)
-                .setBrokerName("Sample Broker")
+                .setBrokerId(ConfigStore.getInstance().getSettings().getName().hashCode())
+                .setBrokerName(ConfigStore.getInstance().getSettings().getName())
                 .setLocalDomain(securityDomain)
-                .addReachableDomains(domainService)
+                .addAllReachableDomains(domainServices)
                 .build();
     }
 
