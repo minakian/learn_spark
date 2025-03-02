@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package afrl.ntf.broker_to_mms.v1;
+
+option java_package = "afrl.ntf.broker_to_mms.v1";
+option java_outer_classname = "BrokerToMMSMessageOuterClass";
+
+import "afrl/ntf/broker_to_mms/v1/broker_services_message.proto";
+import "afrl/ntf/broker_to_mms/v1/path_metric_info_request.proto";
+
+message BrokerToMMSMessage {
+    oneof msg {
+        BrokerServiceMessage broker_msg = 1;
+        PathMetricInfoRequest path_request = 2;
+    }
+}

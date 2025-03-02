@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package afrl.ntf.broker_to_mms.v1;
+
+import "afrl/ntf/common/v1/path_attribute.proto";
+
+message PathMetricInfoRequest {
+    uint32 destination_id = 1;
+    uint32 source_id = 2;
+    repeated afrl.ntf.common.v1.PathAttribute attributes = 3;
+}

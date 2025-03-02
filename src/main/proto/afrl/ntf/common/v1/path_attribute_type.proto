@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+enum PathAttributeType {
+    PATH_ATTRIBUTE_TYPE_UNDEFINED = 0;
+    PATH_CAPACITY_RECV_KBITS_PS = 1;
+    PATH_CAPACITY_XMIT_PS = 2;
+    PATH_LATENCY_MILLISECS = 3;
+    PATH_JITTER_MILLISECS = 4;
+    PATH_DELIVERY = 5;
+    PATH_QUALITY = 6;
+    PATH_FLOW_START_TIMESTAMP = 7;
+    PATH_FLOW_END_TIMESTAMP = 8;
+}

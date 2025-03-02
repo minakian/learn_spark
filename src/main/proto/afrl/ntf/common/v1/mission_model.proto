@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+message InformationExchangeRequirement {
+    string identifier = 1;
+    string text = 2;
+    string messageType = 3;
+    string messageClassification = 4;
+    string priority = 5;
+    string senderIdentifier = 6;
+    string receiverIdentifier = 7;
+    uint32 maxLatencyInSec = 8;
+    uint32 minThroughputInKBPS = 9;
+    uint32 maxErrorRate = 10;
+}
+
+message MissionModel {
+    string identifier = 1;
+    string text = 2;
+    string missionIdentifier = 3;
+    repeated InformationExchangeRequirement requirements = 4;
+}

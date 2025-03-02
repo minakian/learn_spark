@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package afrl.ntf.mms_to_broker.v1;
+
+message SubscriberInformationMessage {
+    uint32 subscriber_id = 1;
+    string subscriber_name = 2;
+    string ims_identifier = 3;
+    string ims_topic = 4;
+    string predicate = 5;
+}

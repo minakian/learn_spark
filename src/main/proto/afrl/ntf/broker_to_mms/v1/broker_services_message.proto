@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package afrl.ntf.broker_to_mms.v1;
+
+option java_package = "afrl.ntf.broker_to_mms.v1";
+option java_outer_classname = "BrokerServiceMessageOuterClass";
+
+import "google/protobuf/duration.proto";
+import "afrl/ntf/common/v1/security_domain.proto";
+import "afrl/ntf/common/v1/message_format.proto";
+
+message MessageService {
+    afrl.ntf.common.v1.MessageFormat message_format = 1;
+    google.protobuf.Duration average_broker_latency = 2;
+}
+
+message DirectionalServices {
+    repeated MessageService message_services = 1;
+}
+
+message DomainService {
+    afrl.ntf.common.v1.SecurityDomain securityDomain = 1;
+    DirectionalServices to = 2;
+    DirectionalServices from = 3;
+}
+
+message BrokerServiceMessage {
+    int32 broker_id = 1;
+    string broker_name = 2;
+    afrl.ntf.common.v1.SecurityDomain local_domain = 3;
+    repeated DomainService reachable_domains = 4;
+}

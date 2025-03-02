@@ -7,8 +7,14 @@ import com.example.client.ui.UserInteractionHandler;
 import com.example.client.rest.SparkRestServer;
 import com.example.client.store.ConfigStore;
 
+import java.io.IOException;
+import java.net.Socket;
+
 public class ComplexClient {
     private static final int REST_SERVER_PORT = 4567;
+    private static final String SERVER_HOST = "127.0.0.1";
+    private static final int SERVER_PORT = 12345;
+    private static final int RECONNECT_DELAY_MS = 1000;
 
     public static void main(String[] args) {
         ComplexClient client = new ComplexClient();
@@ -28,26 +34,36 @@ public class ComplexClient {
 
         System.out.println(ConfigStore.getInstance().getSettings());
 
-        try {
-            // Establish socket connection
-            ConnectionManager connectionManager = new ConnectionManager();
-            connectionManager.connect();
+        while (true) {
+            try {
+                // Establish socket connection
+                ConnectionManager connectionManager = new ConnectionManager();
+                connectionManager.connect();
 
-            // Start the receiver thread for incoming messages
-            MessageReceiver receiver = new MessageReceiver(connectionManager);
-            Thread receiverThread = new Thread(receiver);
-            receiverThread.setDaemon(true);
-            receiverThread.start();
+                // Start the receiver thread for incoming messages
+                MessageReceiver receiver = new MessageReceiver(connectionManager);
+                Thread receiverThread = new Thread(receiver);
+                receiverThread.setDaemon(true);
+                receiverThread.start();
 
-            // Start user interaction loop
-            UserInteractionHandler uiHandler = new UserInteractionHandler(connectionManager);
-            uiHandler.run();
+                // Start user interaction loop
+                UserInteractionHandler uiHandler = new UserInteractionHandler(connectionManager);
+                uiHandler.run();
 
-            // Cleanup on exit
-            connectionManager.disconnect();
-
-        } catch (Exception e) {
-            e.printStackTrace();
+                // Cleanup on exit
+                connectionManager.disconnect();
+                break;
+            } catch (IOException e) {
+                System.out.println("Failed to connect to server. Retrying in " + RECONNECT_DELAY_MS / 1000 + " seconds...");
+                try {
+                    Thread.sleep(RECONNECT_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                break;
+            }
         }
     }
 }

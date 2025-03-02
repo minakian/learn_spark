@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+enum SensitivityLevel {
+    SENSITIVITY_LEVEL_UNDEFINED = 0;
+    SENSITIVITY_LEVEL_SAP = 1;
+    SENSITIVITY_LEVEL_REL_TO = 2;
+}

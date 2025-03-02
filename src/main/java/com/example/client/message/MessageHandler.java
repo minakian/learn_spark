@@ -47,7 +47,7 @@ public class MessageHandler {
 
     private void handleSubscriptionMessage(SubscriberInformationMessage subMsg) {
         try {
-            SubscriptionModel sub = new SubscriptionModel(subMsg.getImsTopic(), subMsg.getPredicate());
+            SubscriptionModel sub = new SubscriptionModel(subMsg.getImsTopic(), subMsg.getPredicate(), subMsg.getSubscriberId(), subMsg.getSubscriberName(), subMsg.getImsIdentifier());
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(sub);
             System.out.println("Subscription JSON: " + json);

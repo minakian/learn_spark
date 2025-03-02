@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+enum MessageType {
+    MESSAGE_TYPE_UNDEFINED = 0;
+    MESSAGE_TYPE_NTF = 1;
+    MESSAGE_TYPE_MISSION = 2;
+}

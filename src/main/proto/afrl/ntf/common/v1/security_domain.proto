@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+import "afrl/ntf/common/v1/classification_level.proto";
+import "afrl/ntf/common/v1/sensitivity_level.proto";
+
+message SecurityDomain {
+    ClassificationLevel classificationLevel = 1;
+    SensitivityLevel sensitivityLevel = 2;
+}

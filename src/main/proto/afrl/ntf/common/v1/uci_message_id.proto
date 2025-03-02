@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+enum UciMessageId {
+    UCI_MESSAGE_ID_UNDEFINED = 0;
+    UCI_2_0 = 1;
+    UCI_2_1 = 2;
+    UCI_2_2 = 3;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package afrl.ntf.mms_to_broker.v1;
+
+import "afrl/ntf/common/v1/path_metric_info.proto";
+
+message PathMetricInfoReply {
+    afrl.ntf.common.v1.PathMetricInfo info = 1;
+}

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+enum Link16MessageId {
+    LINK16_MESSAGE_ID_UNDEFINED = 0;
+
+    J2_DOT0 = 1;
+    J2_DOT1 = 2;
+    J2_DOT2 = 3;
+    J2_DOT3 = 4;
+    J2_DOT4 = 5;
+    J2_DOT5 = 6;
+    J2_DOT6 = 7;
+
+    J3_DOT0 = 8;
+    J3_DOT1 = 9;
+    J3_DOT2 = 10;
+    J3_DOT3 = 12;
+    J3_DOT4 = 13;
+    J3_DOT5 = 14;
+    J3_DOT6 = 15;
+    J3_DOT7 = 16;
+}

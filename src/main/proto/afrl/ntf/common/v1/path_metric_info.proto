@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+import "afrl/ntf/common/v1/path_attribute.proto";
+
+message PathMetricInfo {
+    uint32 destination = 1;
+    uint32 source_id = 2;
+    uint32 priority = 3;
+    repeated afrl.ntf.common.v1.PathAttribute path_metrics = 4;
+}

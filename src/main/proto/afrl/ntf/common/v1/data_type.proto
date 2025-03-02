@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+enum DataType {
+    DATA_TYPE_UNDEFINED = 0;
+    DATA_TYPE_SIMULATION = 1;
+    DATA_TYPE_UCI = 2;
+    DATA_TYPE_LINK16 = 3;
+}

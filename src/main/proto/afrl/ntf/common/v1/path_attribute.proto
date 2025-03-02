@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+import "afrl/ntf/common/v1/path_attribute_type.proto";
+
+message PathAttribute {
+    PathAttributeType attribute_type = 1;
+    int32 value = 2;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+enum SimulationMessageId {
+    UNDEFINED = 0;
+    UCI_LIKE = 1;
+    Z = 2;
+}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package afrl.ntf.common.v1;
+
+import "afrl/ntf/common/v1/data_type.proto";
+import "afrl/ntf/common/v1/simulation_message_id.proto";
+import "afrl/ntf/common/v1/link16_message_id.proto";
+import "afrl/ntf/common/v1/uci_message_id.proto";
+
+message MessageFormat {
+    DataType data_type = 1;
+    oneof data_subtype {
+        SimulationMessageId sim_id = 2;
+        Link16MessageId link16_id = 3;
+        UciMessageId uci_id = 4;
+    }
+}
