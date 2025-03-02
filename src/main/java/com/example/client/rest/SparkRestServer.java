@@ -1,4 +1,4 @@
-package com.example.client;
+package com.example.client.rest;
 
 import static spark.Spark.*;
 
